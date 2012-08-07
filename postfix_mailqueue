@@ -87,17 +87,19 @@ MAILLOG=${maillog:-/var/log/mail.log}
 POSTCONFSPOOL="$(postconf -h queue_directory 2>/dev/null || echo /var/spool/postfix)"
 SPOOLDIR=${spooldir:-$POSTCONFSPOOL}
 
+# Try to detect munin libdir on Ubuntu 12.04.
+if [ -z "$MUNIN_LIBDIR" -a -d /usr/share/munin ]; then
+    export MUNIN_LIBDIR=/usr/share/munin/
+fi
 . $MUNIN_LIBDIR/plugins/plugin.sh
 
 syslog5mins() {
 	#for (( i = 4; i >= 0; i-- )) ; do
 	for i in 4 3 2 1 0; do
-		# In %_d the underscore is important since it demands `date`
-		# to pad with spaces (like syslog for e.g. "Jan  1" to "Jan  9")
-		# instead of zeros.
-		dstring=`LANG=C date -d "-$i min" +"%b %_d %R"`
+	        # This is optimized for Syslog-NG with ISO timestamps
+		dstring=`LANG=C date -d "-$i min" +"%FT%R"`
 		#echo "Entries for '$dstring':"
-		grep "^$dstring:.. " $1
+		egrep "^$dstring:.." $1
 	done
 }
 
